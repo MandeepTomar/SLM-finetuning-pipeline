@@ -1,0 +1,49 @@
+# ══════════════════════════════════════════════════════════════════════
+# SLM Fine-tuning Pipeline — full dependency list
+#
+# Stage 0 (generate_dataset.py) — CPU, any machine with internet access
+# Stage 1 (SLM_finetune_v2.py) — GPU required (T4 16 GB or better)
+# Stage 2 (multiturn_train.py) — GPU required
+# Stage 3 (mistral_dpo_train.py) — GPU required
+#
+# Install everything:
+#   pip install -r requirements.txt
+#
+# Training scripts include patches for a transformers 4.56.x bug
+# (list_repo_templates). Stay on the 4.56.x line or remove the patches
+# once you upgrade past it.
+# ══════════════════════════════════════════════════════════════════════
+
+# ── Stage 0: Dataset generation (generate_dataset.py) ─────────────────
+# CPU only — run on any machine with internet access.
+pypdf>=4.0              # PDF text extraction (also used in Stage 4)
+openai>=1.0             # LLM API for sample generation (gpt-4o-mini)
+python-dotenv>=1.0      # loads OPENAI_API_KEY from .env file
+tqdm>=4.66              # progress bars
+
+# ── Stage 2a: Multi-turn dataset generation (generate_multiturn_dataset.py)
+# CPU only — no extra dependencies beyond the standard library.
+# (json, os, random, pathlib are all built-in)
+
+# ── Stages 1, 2b, 3a, 3b: SLM fine-tuning + inference (GPU required) ──
+# unsloth pulls in compatible torch / transformers / peft / bitsandbytes.
+# Stay on the 4.56.x transformers line unless you remove the in-code patches.
+unsloth
+transformers>=4.56,<4.57
+trl>=0.9
+datasets>=2.19
+peft>=0.11
+accelerate>=0.30
+bitsandbytes>=0.43
+huggingface_hub>=0.23
+numpy>=1.26
+
+# ── Stage 0.5: Hyperparameter search (tune_hyperparameters.py) ────────
+# Optional — run before Stage 1 to find the best LR / LoRA settings.
+# GPU required (shares unsloth/transformers already listed above).
+optuna>=3.5              # Bayesian HPO with TPE sampler + MedianPruner
+
+# ── Stage 4: RAG chatbot inference (rag_chatbot.py) ───────────────────
+# CPU works for embedding; GPU strongly recommended for generation.
+sentence-transformers>=2.2  # PDF chunk embeddings (all-MiniLM-L6-v2)
+faiss-cpu>=1.7              # vector similarity search (swap for faiss-gpu if available)
